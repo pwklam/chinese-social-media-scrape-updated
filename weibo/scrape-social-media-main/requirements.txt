@@ -1,0 +1,16 @@
+# Appium_Python_Client
+# Appium_Python_Client
+dashscope
+numpy
+opencv_python
+opencv_python_headless
+pandas
+Pillow
+playwright
+psutil
+PyAutoGUI
+pyperclip
+pytesseract
+pywinauto
+selenium
+openpyxl

@@ -1,0 +1,8 @@
+__pycache__/
+*.xlsx
+*.xls
+.venv
+*.log
+*.db
+temp/
+weibo_cookie.txt
