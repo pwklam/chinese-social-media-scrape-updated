@@ -218,6 +218,8 @@ async def scrape_post(url, conn):
             }]
             
             logger.info(f"Saving:  {details['title'][: 30] if details['title'] else 'Unknown'}...")
+            create_table(conn, config.table_name)
+            insert_data(conn, config.table_name, item)
             utils.insert_data(conn, config.table_name, item)
             logger.info("✅ Saved!")
             
@@ -225,3 +227,4 @@ async def scrape_post(url, conn):
             logger.error(f"Error scraping {url}: {e}")
         finally:
             await browser.close()
+
