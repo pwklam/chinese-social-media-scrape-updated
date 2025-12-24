@@ -72,33 +72,65 @@ async def extract_details_new(page):
 
     return details
 
-async def extract_comments(page, max_comments=20):
-    """
-    Extracts comments from a Douyin post page.
-    
-    Args:
-        page: Playwright page object
-        max_comments: Maximum number of comments to extract (default: 20)
-    
-    Returns:
-        List of dictionaries containing comment data
-    """
+async def extract_comments(page, max_comments=500):
+    logger.info(f"Extracting comments (max: {max_comments})...")
     comments = []
     
     try:
-        logger.info(f"[LOAD] Starting comment extraction (max: {max_comments})...")
+        # Scroll to load comments and click load more if available
+        logger.info("Scrolling to load comments...")
+        previous_count = 0
+        no_change_count = 0
         
-        # Scroll to load more comments
-        logger.info("[SCROLL] Scrolling to load comments...")
-        for i in range(3):
+        for i in range(50):  # Increased to 50 for more attempts
             try:
-                await page.evaluate("window.scrollBy(0, 500)")
-                await page.wait_for_timeout(2000)
-                logger.info(f"Scroll {i+1}/3 completed")
-            except Exception as e:
+                # Scroll down
+                await page.evaluate("window.scrollBy(0, 1000)")  # Increased scroll distance
+                await page.wait_for_timeout(3000)  # Increased wait time
+                
+                # Try to click "load more" button (Douyin uses "查看更多评论" or similar)
+                try:
+                    load_more_selectors = [
+                        'text=查看更多评论',
+                        'text=展开更多',
+                        '[data-e2e="comment-load-more"]',  # If it has a data-e2e
+                        'button:has-text("更多")'
+                    ]
+                    for selector in load_more_selectors:
+                        load_more = page.locator(selector)
+                        if await load_more.count() > 0 and await load_more.is_visible():
+                            await load_more.click()
+                            logger.info(f"Clicked load more button at scroll {i+1}")
+                            await page.wait_for_timeout(3000)
+                            break
+                except Exception as e:
+                    logger.debug(f"Load more click failed: {e}")
+                
+                # Count loaded comments
+                comment_elems = await page.locator('[data-e2e="comment-item"]').all()
+                current_count = len(comment_elems) if comment_elems else 0
+                
+                if i % 5 == 0:
+                    logger.info(f"Scroll {i+1}/50: {current_count} comments loaded")
+                
+                # Stop if no new comments
+                if current_count == previous_count:
+                    no_change_count += 1
+                    if no_change_count >= 10:  # Increased patience
+                        logger.info("No new comments loading. Stopping.")
+                        break
+                else:
+                    no_change_count = 0
+                
+                previous_count = current_count
+                
+                if current_count >= max_comments: 
+                    break
+                    
+            except Exception as e: 
                 logger.error(f"Scroll error: {e}")
         
-        # Try to locate comment elements using different selectors
+        # Extract comments
         comment_selectors = [
             '[data-e2e="comment-item"]',
             '.comment-item',
@@ -106,19 +138,33 @@ async def extract_comments(page, max_comments=20):
         ]
         
         comment_elements = None
-        for selector in comment_selectors:
-            try:
+        for selector in comment_selectors: 
+            try: 
                 comment_elements = await page.locator(selector).all()
                 if comment_elements and len(comment_elements) > 0:
-                    logger.info(f"[OK] Found {len(comment_elements)} comments using selector: {selector}")
+                    logger.info(f"Found {len(comment_elements)} comments")
                     break
-            except Exception as e:
-                logger.info(f"Selector {selector} failed: {e}")
+            except: 
                 continue
         
-        if not comment_elements or len(comment_elements) == 0:
-            logger.warning("[WARN] No comment elements found on page")
+        if not comment_elements: 
+            logger.warning("No comment elements found")
             return comments
+        
+        # Extract text from each comment
+        for idx, comment_elem in enumerate(comment_elements[: max_comments]):
+            try:
+                text = await comment_elem.inner_text()
+                comments.append(text)
+            except: 
+                continue
+        
+        logger.info(f"Extracted {len(comments)} raw comments")
+        
+    except Exception as e:
+        logger.error(f"Comment extraction error: {e}")
+    
+    return comments
         
         # Extract data from each comment (limit to max_comments)
         for idx, comment_elem in enumerate(comment_elements[:max_comments]):
@@ -259,5 +305,6 @@ async def scrape_post(url, conn):
             'comments': comments_json
         }]
         logger.info(f"[SAVE] Inserting scraped data into the database...: {item}")
+
 
         utils.insert_data(conn, config.table_name, item)
