@@ -22,3 +22,5 @@ I have separated the scraping of Weibo and Douyin into two different processes.
 
 3. Use Dec 30.ipynb to run the scraping task. Make sure to update the file paths and url in the notebook before running it.
 
+4. If you want to scrape more comments, please consider to log in the duoyin account.
+
