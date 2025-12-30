@@ -18,7 +18,7 @@ I have separated the scraping of Weibo and Douyin into two different processes.
 #Scraping Duoyin
 1. Go to chinese-social-media-scrape-updated/duoyin
    
-2. Download the file scrape-social-media-main. This time doesn't need to chnage the files of Url.txt and weibo_cookie.txt
+2. Download the file scrape-social-media-main. This time doesn't need to chnage the files of weibo_cookie.txt. But Url.txt needs to change the link.
 
-3. Use Dec_24_v2.ipynb to run the scraping task. Make sure to update the file paths and url in the notebook before running it.
+3. Use Dec 30.ipynb to run the scraping task. Make sure to update the file paths and url in the notebook before running it.
 
